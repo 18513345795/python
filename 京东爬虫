@@ -1,0 +1,53 @@
+import re
+import requests
+import time
+import os
+
+def CrawlerModule(Primary,Condition,Code):
+    try:
+        res = requests.get(str(Primary)) #打开网页
+        res.encoding = str(Code) #定义网页编码
+        result = res.text #获取网页源码文本
+        reg = r''+str(Condition) #定义正则表达式
+        reg = re.compile(reg) #编译正则表达式
+        return re.findall(reg,result) #搜索并且输出
+    except Exception as A:
+        for i in range(5): #循环重试部分
+            print('出现异常正在重试第{0}次'.format(i)+str(A))
+            time.sleep(10)
+            res = requests.get(str(Primary))
+            res.encoding = str(Code)
+            result = res.text
+            reg = r''+str(Condition)
+            reg = re.compile(reg)
+            return re.findall(reg,result)
+
+def SearchWeb(Input,condition):
+    res = r'{0}'.format(condition)
+    res = re.compile(res)
+    return re.findall(res,Input)
+
+A = 0
+PcText = {}
+JdWed = 'https://list.jd.com/list.html?cat=670%2C671%2C672&go=0'
+while JdWed: #判断循环只要JdWed中有值就继续循环
+    for content in CrawlerModule(JdWed,'<a target="_blank" title="" href="(.*?)">','utf-8'): #循环搜索内部详情页
+        for GetText in CrawlerModule('http:{0}'.format(content),'<title>(.*?)【行情 报价 价格 评测】-京东</title>','gbk'): #在详情页中搜索标题
+            A += 1
+            name = SearchWeb(GetText,'(【.*?】)') #在标题中搜索键名到name
+            name = name[0] #重定义键名name
+            value = [GetText,'http:{0}'.format(content)] #组合键值value
+            if name in PcText: #判断字典中是否存在键名name
+                PcText[name]. append(value) #存在键名则添加建值
+            else:
+                PcText[name] = [value] #不存在键名则创建键并赋值
+            print(name[0],value,A) #打印输出
+    JdWed = CrawlerModule(JdWed,' <a class="pn-next" href="(.*?)">下一页<i>></i></a>','utf-8') #搜索下一页JdWed
+    JdWed = 'https://list.jd.com{0}'.format(JdWed[0]) #重定义下一页地址JdWed
+    print(JdWed)
+
+print('总数',len(PcText['【联想拯救者】']))
+sua = input('要搜索的值')
+for i in range(len(PcText['【{0}】'.format(sua)])):
+    print(PcText['【{0}】'.format(sua)][i])
+print()
